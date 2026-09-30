@@ -7,6 +7,7 @@ FROM ${ERLANG_IMAGE}
 
 LABEL org.opencontainers.image.source=https://github.com/groguelon/sandboxes
 
+ARG DEBIAN_FRONTEND=noninteractive
 ARG ERLANG_VERSION
 ARG ELIXIR_VERSION=1.20.4
 

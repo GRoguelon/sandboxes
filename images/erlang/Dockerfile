@@ -6,6 +6,19 @@ FROM ${MISE_IMAGE}
 
 LABEL org.opencontainers.image.source=https://github.com/groguelon/sandboxes
 
+ARG DEBIAN_FRONTEND=noninteractive
+
+USER root
+
+# Toolchain to build NIFs and git dependencies, plus the libraries the precompiled OTP links against.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      autoconf automake build-essential git libtool \
+      libssl3t64 libncurses6 libstdc++6 && \
+    rm -rf /var/lib/apt/lists/*
+
+USER agent
+
 ARG ERLANG_VERSION=29.1.1
 
 ENV MISE_ERLANG_PRECOMPILED_OS=ubuntu-26.04 \

@@ -16,9 +16,7 @@ ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 TZ=Etc/UTC \
 USER root
 
 RUN apt-get update && apt-get dist-upgrade -y && \
-    apt-get install -y --no-install-recommends \
-      build-essential curl ca-certificates direnv git unzip \
-      libssl3t64 libncurses6 libstdc++6 zlib1g && \
+    apt-get install -y --no-install-recommends ca-certificates curl direnv && \
     rm -rf /var/lib/apt/lists/* && \
     printf '%s\n' 'eval "$(mise activate bash)"' 'eval "$(direnv hook bash)"' >> /home/agent/.bashrc
 
