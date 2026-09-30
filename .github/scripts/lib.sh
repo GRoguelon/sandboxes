@@ -22,6 +22,11 @@ latest_rebar3() {
   gh api repos/erlang/rebar3/releases/latest --jq .tag_name
 }
 
+# Latest OpenTofu release, without the leading "v". Needs GH_TOKEN.
+latest_opentofu() {
+  gh api repos/opentofu/opentofu/releases/latest --jq '.tag_name | ltrimstr("v")'
+}
+
 # Latest Elixir release with a precompiled build for the given OTP major version.
 latest_elixir() {
   curl -fsSL https://builds.hex.pm/builds/elixir/builds.txt |

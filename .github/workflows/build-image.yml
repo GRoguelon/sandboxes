@@ -58,6 +58,8 @@ jobs:
           context: ${{ inputs.context }}
           platforms: linux/${{ matrix.arch }}
           build-args: ${{ inputs.build-args }}
+          secrets: |
+            github_token=${{ github.token }}
           outputs: type=image,name=${{ inputs.image }},push-by-digest=true,name-canonical=true,push=true
 
       - name: Export digest
