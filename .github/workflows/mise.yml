@@ -1,0 +1,78 @@
+name: mise
+
+on:
+  schedule:
+    - cron: "0 9,21 * * *"
+      timezone: America/New_York
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Rebuild even if nothing changed
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}
+
+permissions: {}
+
+env:
+  BASE: docker.io/docker/sandbox-templates:claude-code-minimal
+  IMAGE: ghcr.io/groguelon/sandboxes-mise
+
+jobs:
+  check:
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      build: ${{ steps.check.outputs.build }}
+      tags: ${{ steps.check.outputs.tags }}
+      build-args: ${{ steps.check.outputs.build-args }}
+      annotations: ${{ steps.check.outputs.annotations }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - id: check
+        shell: bash
+        env:
+          FORCE: ${{ inputs.force || false }}
+        run: |
+          source .github/scripts/lib.sh
+          current="${IMAGE}:claude-code-minimal"
+
+          mise_version=$(latest_mise)
+          base_digest=$(index_digest "$BASE")
+
+          decide "$current" "$FORCE" \
+            "mise|$(index_annotation "$current" "${ANNOTATION_NS}.mise.version")|${mise_version}" \
+            "base digest|$(index_annotation "$current" org.opencontainers.image.base.digest)|${base_digest}"
+
+          set_output tags "claude-code-minimal
+          ${mise_version}-claude-code-minimal"
+          set_output build-args "BASE_IMAGE=${BASE%:*}@${base_digest}
+          MISE_VERSION=${mise_version}"
+          set_output annotations "org.opencontainers.image.base.name=${BASE}
+          org.opencontainers.image.base.digest=${base_digest}
+          ${ANNOTATION_NS}.mise.version=${mise_version}"
+
+  build:
+    needs: check
+    if: needs.check.outputs.build == 'true'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/build-image.yml
+    with:
+      image: ghcr.io/groguelon/sandboxes-mise
+      context: images/mise
+      tags: ${{ needs.check.outputs.tags }}
+      build-args: ${{ needs.check.outputs.build-args }}
+      annotations: ${{ needs.check.outputs.annotations }}

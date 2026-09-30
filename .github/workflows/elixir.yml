@@ -1,0 +1,92 @@
+name: elixir
+
+on:
+  schedule:
+    - cron: "30 0,6,12,18 * * *"
+      timezone: America/New_York
+  workflow_run:
+    workflows: [erlang]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Rebuild even if nothing changed
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}
+
+permissions: {}
+
+env:
+  BASE: ghcr.io/groguelon/sandboxes-erlang:claude-code-minimal
+  IMAGE: ghcr.io/groguelon/sandboxes-elixir
+
+jobs:
+  check:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      build: ${{ steps.check.outputs.build }}
+      tags: ${{ steps.check.outputs.tags }}
+      build-args: ${{ steps.check.outputs.build-args }}
+      annotations: ${{ steps.check.outputs.annotations }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - id: check
+        shell: bash
+        env:
+          FORCE: ${{ inputs.force || false }}
+        run: |
+          source .github/scripts/lib.sh
+          current="${IMAGE}:claude-code-minimal"
+
+          base_digest=$(index_digest "$BASE")
+          mise_version=$(index_annotation "$BASE" "${ANNOTATION_NS}.mise.version")
+          erlang_version=$(index_annotation "$BASE" "${ANNOTATION_NS}.erlang.version")
+          : "${mise_version:?${BASE} has no mise version annotation, run the erlang workflow first}"
+          : "${erlang_version:?${BASE} has no erlang version annotation, run the erlang workflow first}"
+          elixir_version=$(latest_elixir "${erlang_version%%.*}")
+          : "${elixir_version:?no Elixir build for OTP ${erlang_version%%.*}}"
+
+          decide "$current" "$FORCE" \
+            "elixir|$(index_annotation "$current" "${ANNOTATION_NS}.elixir.version")|${elixir_version}" \
+            "base digest|$(index_annotation "$current" org.opencontainers.image.base.digest)|${base_digest}"
+
+          set_output tags "claude-code-minimal
+          ${elixir_version}-claude-code-minimal
+          ${elixir_version}-erlang-${erlang_version}-claude-code-minimal
+          ${elixir_version}-erlang-${erlang_version}-mise-${mise_version}-claude-code-minimal"
+          set_output build-args "ERLANG_IMAGE=${BASE%:*}@${base_digest}
+          ERLANG_VERSION=${erlang_version}
+          ELIXIR_VERSION=${elixir_version}"
+          set_output annotations "org.opencontainers.image.base.name=${BASE}
+          org.opencontainers.image.base.digest=${base_digest}
+          ${ANNOTATION_NS}.mise.version=${mise_version}
+          ${ANNOTATION_NS}.erlang.version=${erlang_version}
+          ${ANNOTATION_NS}.elixir.version=${elixir_version}"
+
+  build:
+    needs: check
+    if: needs.check.outputs.build == 'true'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/build-image.yml
+    with:
+      image: ghcr.io/groguelon/sandboxes-elixir
+      context: images/elixir
+      tags: ${{ needs.check.outputs.tags }}
+      build-args: ${{ needs.check.outputs.build-args }}
+      annotations: ${{ needs.check.outputs.annotations }}
