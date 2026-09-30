@@ -1,9 +1,6 @@
 name: erlang
 
 on:
-  schedule:
-    - cron: "0 0,6,12,18 * * *"
-      timezone: America/New_York
   workflow_run:
     workflows: [mise]
     types: [completed]
@@ -25,7 +22,6 @@ env:
 
 jobs:
   check:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-26.04
     permissions:
       contents: read

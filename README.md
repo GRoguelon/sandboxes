@@ -125,14 +125,16 @@ Stack more mixins with extra `--kit` flags; they apply in order. Kits can also c
 
 ## How the images are built
 
-GitHub Actions rebuild the images on a schedule and only push when something changed: a new tool release, or a new digest of the parent image (which is how Claude Code updates in the upstream template reach every image).
+GitHub Actions check for updates once a day and only push when something changed: a new tool release, or a new digest of the parent image (which is how Claude Code updates in the upstream template reach every image).
 
-| Workflow | Schedule (America/New_York) | Also runs after |
-|---|---|---|
-| [`mise`](.github/workflows/mise.yml) | 09:00, 21:00 | — |
-| [`erlang`](.github/workflows/erlang.yml) | 00:00, 06:00, 12:00, 18:00 | `mise` |
-| [`elixir`](.github/workflows/elixir.yml) | 00:30, 06:30, 12:30, 18:30 | `erlang` |
-| [`opentofu`](.github/workflows/opentofu.yml) | 00:15, 06:15, 12:15, 18:15 | `mise` |
+`mise` runs daily at 09:00 America/New_York; every other workflow runs when the one it builds on finishes, whether or not that run succeeded:
+
+| Workflow | Runs |
+|---|---|
+| [`mise`](.github/workflows/mise.yml) | Daily at 09:00 (America/New_York) |
+| [`erlang`](.github/workflows/erlang.yml) | After `mise` |
+| [`elixir`](.github/workflows/elixir.yml) | After `erlang` |
+| [`opentofu`](.github/workflows/opentofu.yml) | After `mise` |
 
 Each workflow's `check` job compares the latest versions with the ones recorded in the published image's annotations (`io.github.groguelon.sandboxes.*`) and writes a comparison table to the run summary. Builds go through [`build-image`](.github/workflows/build-image.yml), which builds each architecture on a native runner (`ubuntu-26.04`, `ubuntu-26.04-arm`) and merges them into one multi-platform image. Every workflow can be run by hand from the Actions tab, with a `force` option to rebuild regardless.
 

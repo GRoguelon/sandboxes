@@ -2,7 +2,7 @@ name: mise
 
 on:
   schedule:
-    - cron: "0 9,21 * * *"
+    - cron: "0 9 * * *"
       timezone: America/New_York
   workflow_dispatch:
     inputs:
