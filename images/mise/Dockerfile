@@ -9,7 +9,9 @@ LABEL org.opencontainers.image.source=https://github.com/groguelon/sandboxes
 ARG DEBIAN_FRONTEND=noninteractive
 
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8 TZ=Etc/UTC \
-    PATH="/home/agent/.local/bin:/home/agent/.local/share/mise/shims:${PATH}"
+    PATH="/home/agent/.local/bin:/home/agent/.local/share/mise/shims:${PATH}" \
+    DISABLE_TELEMETRY=1 \
+    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
 
 USER root
 
