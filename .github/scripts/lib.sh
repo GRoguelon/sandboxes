@@ -17,6 +17,11 @@ latest_erlang() {
   done | sort -V | uniq -d | tail -n 1
 }
 
+# Latest rebar3 release. Needs GH_TOKEN to avoid anonymous API rate limits.
+latest_rebar3() {
+  gh api repos/erlang/rebar3/releases/latest --jq .tag_name
+}
+
 # Latest Elixir release with a precompiled build for the given OTP major version.
 latest_elixir() {
   curl -fsSL https://builds.hex.pm/builds/elixir/builds.txt |

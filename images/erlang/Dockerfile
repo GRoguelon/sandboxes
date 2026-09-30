@@ -25,3 +25,10 @@ ENV MISE_ERLANG_PRECOMPILED_OS=ubuntu-26.04 \
     REBAR_BASE_DIR=".sbx/_build"
 
 RUN mise use -g "erlang@${ERLANG_VERSION}"
+
+ARG REBAR3_VERSION=3.27.1
+
+RUN curl -fsSL "https://github.com/erlang/rebar3/releases/download/${REBAR3_VERSION}/rebar3" \
+      -o /home/agent/.local/bin/rebar3 && \
+    chmod 0755 /home/agent/.local/bin/rebar3 && \
+    rebar3 version

@@ -48,28 +48,33 @@ jobs:
         shell: bash
         env:
           FORCE: ${{ inputs.force || false }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           source .github/scripts/lib.sh
           current="${IMAGE}:claude-code-minimal"
 
           erlang_version=$(latest_erlang)
+          rebar3_version=$(latest_rebar3)
           base_digest=$(index_digest "$BASE")
           mise_version=$(index_annotation "$BASE" "${ANNOTATION_NS}.mise.version")
           : "${mise_version:?${BASE} has no mise version annotation, run the mise workflow first}"
 
           decide "$current" "$FORCE" \
             "erlang|$(index_annotation "$current" "${ANNOTATION_NS}.erlang.version")|${erlang_version}" \
+            "rebar3|$(index_annotation "$current" "${ANNOTATION_NS}.rebar3.version")|${rebar3_version}" \
             "base digest|$(index_annotation "$current" org.opencontainers.image.base.digest)|${base_digest}"
 
           set_output tags "claude-code-minimal
           ${erlang_version}-claude-code-minimal
           ${erlang_version}-mise-${mise_version}-claude-code-minimal"
           set_output build-args "MISE_IMAGE=${BASE%:*}@${base_digest}
-          ERLANG_VERSION=${erlang_version}"
+          ERLANG_VERSION=${erlang_version}
+          REBAR3_VERSION=${rebar3_version}"
           set_output annotations "org.opencontainers.image.base.name=${BASE}
           org.opencontainers.image.base.digest=${base_digest}
           ${ANNOTATION_NS}.mise.version=${mise_version}
-          ${ANNOTATION_NS}.erlang.version=${erlang_version}"
+          ${ANNOTATION_NS}.erlang.version=${erlang_version}
+          ${ANNOTATION_NS}.rebar3.version=${rebar3_version}"
 
   build:
     needs: check
